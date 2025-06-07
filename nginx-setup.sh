@@ -120,6 +120,8 @@ else
     CONFIG_PATH="$SITES_AVAILABLE/${DOMAIN}.conf"
     ln -sf "$CONFIG_PATH" "$SITES_ENABLED/${DOMAIN}.conf"
 fi
+sudo rm -f /etc/nginx/sites-available/default
+sudo rm -f /etc/nginx/sites-enabled/default
 
 echo "🌐 Writing nginx config to $CONFIG_PATH..."
 
