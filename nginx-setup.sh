@@ -6,7 +6,7 @@ DOMAIN="kpawan.com"
 JENKINS_SUB="jenkins.kpawan.com"
 SPRING_PORT=9091
 JENKINS_PORT=8080
-EMAIL="you@example.com"  # Change this
+EMAIL="pawan@gmail.com"  # Change this
 
 echo "🔍 Detecting OS..."
 
