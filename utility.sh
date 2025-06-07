@@ -1,17 +1,13 @@
 #!/bin/bash
-
 set -e
 
-# Detect OS type using /etc/os-release for Linux
+# OS Detection
 OS=""
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
-            OS="debian"
-        elif [[ "$ID" == "rhel" || "$ID" == "centos" || "$ID_LIKE" == *"rhel"* ]]; then
-            OS="rhel"
-        fi
+    if [ -f /etc/debian_version ]; then
+        OS="debian"
+    elif [ -f /etc/redhat-release ]; then
+        OS="rhel"
     fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS="mac"
@@ -22,7 +18,7 @@ fi
 
 echo "🖥️ Detected OS: $OS"
 
-# Utility function to install package if not present
+# Reusable package install function
 install_package() {
     local name=$1
     local check_cmd=$2
@@ -32,19 +28,21 @@ install_package() {
     if eval "$check_cmd" &>/dev/null; then
         echo "✅ Already installed."
     else
-        echo "⬇ Installing $name..."
+        echo "📦 Installing $name..."
         eval "$install_cmd"
     fi
 }
 
-# macOS: Install Homebrew if missing
-if [ "$OS" == "mac" ] && ! command -v brew &>/dev/null; then
-    echo "🍺 Installing Homebrew..."
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+# macOS
+if [ "$OS" == "mac" ]; then
+    if ! command -v brew &>/dev/null; then
+        echo "🍺 Installing Homebrew..."
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+    fi
 fi
 
-# OS-specific installation
+# OS-specific install logic
 case "$OS" in
   debian)
     sudo apt-get update -y
@@ -52,8 +50,7 @@ case "$OS" in
     install_package "Docker" "command -v docker" "sudo apt-get install -y docker.io"
 
     install_package "Jenkins" "command -v jenkins" "
-      sudo rm -f /etc/apt/sources.list.d/jenkins.list &&
-      sudo rm -f /usr/share/keyrings/jenkins-keyring.gpg &&
+      sudo rm -f /etc/apt/sources.list.d/jenkins.list /usr/share/keyrings/jenkins-keyring.gpg &&
       curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | gpg --dearmor | sudo tee /usr/share/keyrings/jenkins-keyring.gpg > /dev/null &&
       echo 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/' | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null &&
       sudo apt-get update -y &&
@@ -70,12 +67,10 @@ case "$OS" in
 
     install_package "Docker" "command -v docker" "sudo yum install -y docker && sudo systemctl enable --now docker"
 
-   install_package "Jenkins" "command -v jenkins" "
-    sudo rm -f /etc/apt/sources.list.d/jenkins.list /usr/share/keyrings/jenkins-keyring.gpg &&
-    curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | gpg --dearmor | sudo tee /usr/share/keyrings/jenkins-keyring.gpg > /dev/null &&
-    echo 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/' | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null &&
-    sudo apt-get update -y &&
-    sudo apt-get install -y openjdk-17-jdk jenkins
+    install_package "Jenkins" "command -v jenkins" "
+      sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo &&
+      sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key &&
+      sudo yum install -y java-17-openjdk jenkins
     "
 
     install_package "Maven" "command -v mvn" "sudo yum install -y maven"
@@ -90,4 +85,4 @@ case "$OS" in
     ;;
 esac
 
-echo "✅ All required software is installed and ready!"
+echo "✅ All required software is installed."
