@@ -78,6 +78,7 @@ fi
 echo "✅ Certbot installed."
 
 # Check if certificate already exists
+#  also need to check if the domain is already associated with an aws server
 if [ ! -f /etc/letsencrypt/live/$DOMAIN/fullchain.pem ]; then
     echo "📡 Obtaining SSL certificate from Let's Encrypt..."
     if [ "$OS_ID" = "mac" ]; then
@@ -165,13 +166,6 @@ EOF
 echo "✅ Nginx config created and enabled."
 
 echo "📡 Obtaining SSL certificate from Let's Encrypt..."
-#certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
-
-#if [ "$OS_ID" = "mac" ]; then
-#    sudo certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
-#else
-#    certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
-#fi
 
 echo "🔁 Testing and reloading Nginx..."
 if nginx -t; then
