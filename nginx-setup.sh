@@ -75,8 +75,21 @@ else
     echo "❌ Certbot installation not supported for OS: $OS_ID"
     exit 1
 fi
-
 echo "✅ Certbot installed."
+
+# Check if certificate already exists
+if [ ! -f /etc/letsencrypt/live/$DOMAIN/fullchain.pem ]; then
+    echo "📡 Obtaining SSL certificate from Let's Encrypt..."
+    if [ "$OS_ID" = "mac" ]; then
+        sudo certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
+    else
+        certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
+    fi
+else
+    echo "🔐 Certificates already exist, skipping certbot."
+fi
+
+# Then write nginx config and reload nginx after that
 
 # Setup nginx config path & folders
 if [ "$OS_ID" = "mac" ]; then
@@ -154,11 +167,11 @@ echo "✅ Nginx config created and enabled."
 echo "📡 Obtaining SSL certificate from Let's Encrypt..."
 #certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
 
-if [ "$OS_ID" = "mac" ]; then
-    sudo certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
-else
-    certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
-fi
+#if [ "$OS_ID" = "mac" ]; then
+#    sudo certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
+#else
+#    certbot --nginx -d "$DOMAIN" -d "$JENKINS_SUB" --non-interactive --agree-tos -m "$EMAIL" --redirect
+#fi
 
 echo "🔁 Testing and reloading Nginx..."
 if nginx -t; then
