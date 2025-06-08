@@ -18,6 +18,7 @@ pipeline {
                     def FULL_DOMAIN = "${SUBDOMAIN}.${DOMAIN}"
 
                     def scriptContent = """#!/bin/bash
+set -e
 
 DOMAIN="${DOMAIN}"
 SUBDOMAIN="${SUBDOMAIN}"
@@ -28,7 +29,32 @@ EMAIL="${EMAIL}"
 CONFIG_FILE="/etc/nginx/sites-available/\${FULL_DOMAIN}.conf"
 SYMLINK="/etc/nginx/sites-enabled/\${FULL_DOMAIN}.conf"
 
-# Create Nginx config
+# Step 1: Create webroot config for certbot
+sudo mkdir -p /var/www/certbot
+
+sudo tee "\${CONFIG_FILE}" > /dev/null <<EOF
+server {
+    listen 80;
+    server_name \${FULL_DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://\\\$host\\\$request_uri;
+    }
+}
+EOF
+
+sudo ln -sf "\${CONFIG_FILE}" "\${SYMLINK}"
+sudo nginx -t
+sudo systemctl reload nginx
+
+# Step 2: Issue SSL certificate
+sudo certbot certonly --webroot -w /var/www/certbot -d "\${FULL_DOMAIN}" --non-interactive --agree-tos -m "\${EMAIL}"
+
+# Step 3: Replace config with full SSL reverse proxy
 sudo tee "\${CONFIG_FILE}" > /dev/null <<EOF
 server {
     listen 80;
@@ -53,15 +79,7 @@ server {
 }
 EOF
 
-# Enable config and reload nginx
-sudo ln -sf "\${CONFIG_FILE}" "\${SYMLINK}"
-sudo nginx -t
-sudo systemctl reload nginx
-
-# Issue SSL cert
-sudo certbot certonly --nginx -d "\${FULL_DOMAIN}" --non-interactive --agree-tos -m "\${EMAIL}"
-
-# Reload again after SSL
+# Final Nginx reload
 sudo nginx -t
 sudo systemctl reload nginx
 """
