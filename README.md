@@ -24,6 +24,11 @@ Step 7: run Jenkins, Docker, Nginx
     systemctl start docker
     systemctl start nginx
 
+Step 8:  
+	1. Open the sudoers file safely: sudo visudo
+    2. Add this line at the bottom: jenkins ALL=(ALL) NOPASSWD: /usr/sbin/usermod, /bin/systemctl restart jenkins
+
+
 Step 8: open https://jenkins.kpawan.com/ and setup pipeline using Pipeline Script from SCM
     SCM: Git
     Repository URL: https://github.com/pawan-k-umar/invoice-management
