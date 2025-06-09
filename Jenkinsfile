@@ -1,3 +1,4 @@
+// add subdmain to nginx conf
 pipeline {
     agent any
 
